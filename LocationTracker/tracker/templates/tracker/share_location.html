@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Share Location</title>
+</head>
+<body>
+
+<h2>Share Your Location</h2>
+
+<p>Your location will only be shared if you allow access.</p>
+
+<button onclick="getLocation()">Allow Location</button>
+
+<p id="status"></p>
+
+
+<script>
+async function getLocation() {
+
+    const status = document.getElementById("status");
+
+    status.innerText = "Requesting location permission...";
+
+    if (!navigator.geolocation) {
+        status.innerText = "Location is not supported.";
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+
+        async function(position) {
+
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            status.innerText = "Sending your location...";
+
+            try {
+                const response = await fetch(
+                    "{% url 'save_location' location.token %}",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": "{{ csrf_token }}"
+                        },
+                        body: JSON.stringify({
+                            latitude: latitude,
+                            longitude: longitude
+                        })
+                    }
+                );
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    status.innerText =
+                        "Location shared successfully!";
+                } else {
+                    status.innerText =
+                        "Unable to share location.";
+                }
+
+            } catch (error) {
+                status.innerText = "Network error.";
+            }
+        },
+
+        function(error) {
+            status.innerText =
+                "Location permission denied or unavailable.";
+        },
+
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+        }
+    );
+}
+</script>
+
+
+</body>
+</html>
